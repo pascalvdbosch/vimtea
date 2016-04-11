@@ -8,9 +8,10 @@ endif
 
 set iskeyword-=_
 
-syn match TeXlabel '\v@@(\w|\ |\d)+@@'
-syn match TeXlabel '\v@:(\w|\ |\d)+:(\w|\ |\d)+:@'
-syn match TeXlabel '\v@:(\w|\ |\d)+@'
+syn match TeXlabel '\v¡[^¡]+¡\d¡[^¡]+¡'
+syn match TeXlabel '\v\@\@[^@]+\@\@'
+syn match TeXlabel '\v\@:[^:]+:(\w|\ |\d)+:\@'
+syn match TeXlabel '\v\@:[^@]+\@'
 hi link TeXlabel DiffAdd
 syn region TeXcomment matchgroup=TeXcomment start="%\[" end="\]%"
 hi link TeXcomment SpecialComment
@@ -119,16 +120,43 @@ syn keyword TeXword cal containedin=TeXequation contained
 syn keyword TeXword bb containedin=TeXequation contained
 syn keyword TeXwordb docu
 "syn keyword TeXwordb emph
-syn match TexWordb 'emph\s*\[.*\]'
+syn match TexWordb '\vemph\s*\[[^\]]+\]'
+syn keyword TexWordb todo
 "syn keyword TeXwordb emph
 syn keyword TeXwordb package
 hi TeXword ctermbg=20
 hi link TeXwordb Todo
 
-syn region TeXaa matchgroup=TeXaa start="section" end="$" contains=TeXlabel
-syn region TeXaa matchgroup=TeXaa start="subsection" end="$" contains=TeXlabel
-syn region TeXaa matchgroup=TeXaa start="subsubsection" end="$" contains=TeXlabel
-syn region TeXaa matchgroup=TeXaa start="paragraph" end="$" contains=TeXlabel
+syn keyword TeXaa THEOREM
+syn keyword TeXaa DEFINITION
+syn keyword TeXaa LEMMA
+syn keyword TeXaa PROOF
+syn region TeXaa matchgroup=TeXaa start="§" end="§" contains=TeXlabel
 hi link TeXaa airline_x
 
 let b:current_syntax = "tea"
+
+setlocal foldmethod=expr
+setlocal foldexpr=MyFolds(v:lnum)
+
+let [s:lnum, s:lev] = [1, 0]
+function! MyFolds(lnum)
+    if s:lnum != a:lnum
+        let s:lev = foldlevel(a:lnum-1)
+        if getline(a:lnum-1) =~# '§§' && s:lev>0
+            let s:lev -= 1
+        endif
+    endif
+    let s:lnum = a:lnum+1
+    let thisline = getline(a:lnum)
+    if thisline =~ '\v§[^§]+§.*'
+        let s:lev += 1
+        return '>'.s:lev
+    elseif thisline =~# '§§' && s:lev>0
+        let lev = s:lev
+        let s:lev -= 1
+        return '<'.lev
+    else
+        return s:lev
+    endif
+endfunction
